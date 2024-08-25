@@ -13,14 +13,30 @@ use onewire::{ds18b20, DeviceSearch, OneWire};
 use panic_halt as _;
 use ufmt::uwriteln;
 
+#[rustfmt::skip]
 const MALESIGN: [u8; 8] = [
-    0b00000, 0b00111, 0b00011, 0b00101, 0b11110, 0b10010, 0b10010, 0b11110,
+    0b00000, 
+    0b00111, 
+    0b00011, 
+    0b00101, 
+    0b11110, 
+    0b10010, 
+    0b10010, 
+    0b11110,
 ];
 
 const MALESIGN_IDX: u8 = 0;
 
+#[rustfmt::skip]
 const DEGREE_SYM: [u8; 8] = [
-    0b00110, 0b01001, 0b00110, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000,
+    0b00110, 
+    0b01001, 
+    0b00110, 
+    0b00000, 
+    0b00000, 
+    0b00000, 
+    0b00000, 
+    0b00000,
 ];
 
 const DEGREE_SYM_IDX: u8 = 1;
@@ -81,7 +97,6 @@ fn main() -> ! {
     loop {
         let mut search = DeviceSearch::new();
         while let Ok(Some(sensor)) = wire.search_next(&mut search, &mut delay) {
-            
             match sensor.address[0] {
                 ds18b20::FAMILY_CODE => {
                     let ds18b20 = ds18b20::DS18B20::new::<()>(sensor).unwrap();
@@ -103,9 +118,9 @@ fn main() -> ! {
                     let mut frac_buf = val_buff.clone();
 
                     let val = val.numtoa_str(10, &mut val_buff);
-            
+
                     let frac = frac.numtoa_str(10, &mut frac_buf);
-                 
+
                     let msg_len = val.chars().count() + frac.chars().count() + 3; // len of msg with . and *C
 
                     let mut clear_msg = |col: u8, row: u8, msg_len: usize| {
