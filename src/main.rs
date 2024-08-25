@@ -13,8 +13,6 @@ use onewire::{ds18b20, DeviceSearch, OneWire};
 use panic_halt as _;
 use ufmt::uwriteln;
 
-const MSG_LEN: usize = 12;
-
 const MALESIGN: [u8; 8] = [
     0b00000, 0b00111, 0b00011, 0b00101, 0b11110, 0b10010, 0b10010, 0b11110,
 ];
@@ -79,12 +77,11 @@ fn main() -> ! {
     lcd.write(MALESIGN_IDX);
     lcd.print(" =");
     lcd.set_position(0, 1);
-
-    let mut buffer = [0u8; 16];
-
+    let mut previous_msg_len = 0;
     loop {
         let mut search = DeviceSearch::new();
         while let Ok(Some(sensor)) = wire.search_next(&mut search, &mut delay) {
+            
             match sensor.address[0] {
                 ds18b20::FAMILY_CODE => {
                     let ds18b20 = ds18b20::DS18B20::new::<()>(sensor).unwrap();
@@ -102,6 +99,15 @@ fn main() -> ! {
 
                     uwriteln!(&mut serial, "temperature is {}.{}", val, frac).unwrap_infallible();
 
+                    let mut val_buff = [0u8; 16];
+                    let mut frac_buf = val_buff.clone();
+
+                    let val = val.numtoa_str(10, &mut val_buff);
+            
+                    let frac = frac.numtoa_str(10, &mut frac_buf);
+                 
+                    let msg_len = val.chars().count() + frac.chars().count() + 3; // len of msg with . and *C
+
                     let mut clear_msg = |col: u8, row: u8, msg_len: usize| {
                         lcd.set_position(col, row);
                         for _ in 0..msg_len {
@@ -110,16 +116,14 @@ fn main() -> ! {
                         lcd.set_position(col, row);
                     };
 
-                    clear_msg(0, 1, MSG_LEN);
+                    clear_msg(0, 1, previous_msg_len);
+                    previous_msg_len = msg_len;
 
-                    let val = val.numtoa_str(10, &mut buffer);
                     lcd.print(val);
                     lcd.print(".");
-                    let frac = frac.numtoa_str(10, &mut buffer);
                     lcd.print(frac);
                     lcd.write(DEGREE_SYM_IDX);
                     lcd.print("C");
-                    // let msg_len = val.len() + frac.len() + 3; // triggers borrow checker
                 }
                 _ => {
                     uwriteln!(&mut serial, " unknown device type").unwrap_infallible();
